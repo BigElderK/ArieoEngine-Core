@@ -1,0 +1,21 @@
+{
+    "name": "areio.engine.core",
+    "description": "Core engine librarie",
+    "build_commands":
+    [
+        "cmake -P build_package.cmake"
+    ],
+    "dependencies": 
+    {
+        "packages": [
+            {
+                "git_url": "https://github.com/BigElderK/ArieoEngine-BuildEnv.git",
+                "tag": "main"
+            },
+            {
+                "git_url": "https://github.com/BigElderK/ArieoEngine-ThirdParties.git",
+                "tag": "main"
+            }
+        ]
+    }
+}
