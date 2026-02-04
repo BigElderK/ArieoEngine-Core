@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.31)
 
-include(${CMAKE_CURRENT_LIST_DIR}/../../02_engine/cmake/engine_project.cmake)
+include(${ARIEO_PACKAGE_BUILDENV_SOURCE_FOLDER}/cmake/engine_project.cmake)
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     arieo_engine_project(
         arieo_core
