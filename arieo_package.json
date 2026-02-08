@@ -1,5 +1,5 @@
 {
-    "name": "ArieoEngine-Core",
+    "name": "Arieo-Core",
     "description": "Core engine librarie",
     "build_commands":
     [
@@ -13,11 +13,11 @@
     {
         "packages": [
             {
-                "git_url": "https://github.com/BigElderK/ArieoEngine-BuildEnv.git",
+                "git_url": "https://github.com/BigElderK/Arieo-BuildEnv.git",
                 "tag": "main"
             },
             {
-                "git_url": "https://github.com/BigElderK/ArieoEngine-ThirdParties.git",
+                "git_url": "https://github.com/BigElderK/Arieo-ThirdParties.git",
                 "tag": "main"
             }
         ]
