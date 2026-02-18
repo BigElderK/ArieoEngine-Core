@@ -145,6 +145,7 @@ namespace Arieo::Core
         }
 
         Logger::fatal("Module not found: {}", module_name);
+        return std::filesystem::path();
     }
 
     const std::vector<std::filesystem::path> Manifest::getAllEngineModulePaths() const
