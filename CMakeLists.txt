@@ -9,7 +9,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android")
         PROJECT_TYPE static_library
 
         DEPENDENCIES
-            PACKAGES
+            THIRDPARTY_PACKAGES
                 easyloggingpp
                 yaml-cpp
                 fmt
@@ -40,7 +40,7 @@ else()
         PROJECT_TYPE static_library
 
         DEPENDENCIES
-            PACKAGES
+            THIRDPARTY_PACKAGES
                 easyloggingpp
                 yaml-cpp
                 fmt
