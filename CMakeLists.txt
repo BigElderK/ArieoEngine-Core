@@ -8,55 +8,59 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android")
         arieo_core
         PROJECT_TYPE static_library
 
-        PACKAGES
-            easyloggingpp
-            yaml-cpp
-            fmt
-            mathfu
-            concurrentqueue
-        PUBLIC_LIBS
-            yaml-cpp::yaml-cpp
-            fmt::fmt
-            mathfu::mathfu
-            concurrentqueue::concurrentqueue
-        PRIVATE_LIBS
-            log
-            android
-            easyloggingpp::easyloggingpp
+        DEPENDENCIES
+            PACKAGES
+                easyloggingpp
+                yaml-cpp
+                fmt
+                mathfu
+                concurrentqueue
+            PUBLIC_LIBS
+                yaml-cpp::yaml-cpp
+                fmt::fmt
+                mathfu::mathfu
+                concurrentqueue::concurrentqueue
+            PRIVATE_LIBS
+                log
+                android
+                easyloggingpp::easyloggingpp
 
-        PUBLIC_INCLUDE_FOLDERS
-            ${CMAKE_CURRENT_LIST_DIR}/public/include
-        
         SOURCES
-            ${CMAKE_CURRENT_LIST_DIR}/private/src/*/*/*.cpp
-            ${CMAKE_CURRENT_LIST_DIR}/private/src/*/*.cpp
-            ${CMAKE_CURRENT_LIST_DIR}/private/src/*.cpp    
+            PUBLIC_INCLUDE_FOLDERS
+                ${CMAKE_CURRENT_LIST_DIR}/public/include
+            
+            CXX_SOURCES
+                ${CMAKE_CURRENT_LIST_DIR}/private/src/*/*/*.cpp
+                ${CMAKE_CURRENT_LIST_DIR}/private/src/*/*.cpp
+                ${CMAKE_CURRENT_LIST_DIR}/private/src/*.cpp    
     )
 else()
     arieo_engine_project(
         arieo_core
         PROJECT_TYPE static_library
 
-        PACKAGES
-            easyloggingpp
-            yaml-cpp
-            fmt
-            mathfu
-            concurrentqueue
-        PUBLIC_LIBS
-            yaml-cpp::yaml-cpp
-            fmt::fmt
-            mathfu::mathfu
-            concurrentqueue::concurrentqueue
-        PRIVATE_LIBS
-            easyloggingpp::easyloggingpp
-        
-        PUBLIC_INCLUDE_FOLDERS
-            ${CMAKE_CURRENT_LIST_DIR}/public/include
+        DEPENDENCIES
+            PACKAGES
+                easyloggingpp
+                yaml-cpp
+                fmt
+                mathfu
+                concurrentqueue
+            PUBLIC_LIBS
+                yaml-cpp::yaml-cpp
+                fmt::fmt
+                mathfu::mathfu
+                concurrentqueue::concurrentqueue
+            PRIVATE_LIBS
+                easyloggingpp::easyloggingpp
         
         SOURCES
-            ${CMAKE_CURRENT_LIST_DIR}/private/src/*/*/*.cpp
-            ${CMAKE_CURRENT_LIST_DIR}/private/src/*/*.cpp
-            ${CMAKE_CURRENT_LIST_DIR}/private/src/*.cpp    
+            PUBLIC_INCLUDE_FOLDERS
+                ${CMAKE_CURRENT_LIST_DIR}/public/include
+            
+            CXX_SOURCES
+                ${CMAKE_CURRENT_LIST_DIR}/private/src/*/*/*.cpp
+                ${CMAKE_CURRENT_LIST_DIR}/private/src/*/*.cpp
+                ${CMAKE_CURRENT_LIST_DIR}/private/src/*.cpp    
     )
 endif()
