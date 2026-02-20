@@ -42,7 +42,7 @@ namespace Arieo::Core
             }
 
             task.m_preprocess_append_tasklet_fun = 
-                [this, &task_queue_back](Core::Coroutine::Task::Tasklet& tasklet) -> bool
+                [&task_queue_back](Core::Coroutine::Task::Tasklet& tasklet) -> bool
                 {
                     if(task_queue_back.enqueue(std::move(tasklet)) == false)
                     {
@@ -74,7 +74,7 @@ namespace Arieo::Core
         m_task_queue_front = m_task_queue_back;
         m_task_queue_back = running_task_queue_temp;
        
-        m_update_finished_promise = std::move(std::promise<void>()); 
+        m_update_finished_promise = std::promise<void>(); 
         m_update_finish_wait_count.store(thread_count);
 
         for(size_t i = 0; i < thread_count; i++)
@@ -102,7 +102,7 @@ namespace Arieo::Core
                         }
 
                         task.m_preprocess_append_tasklet_fun = 
-                            [this, &task_queue_back](Core::Coroutine::Task::Tasklet& tasklet) -> bool
+                            [&task_queue_back](Core::Coroutine::Task::Tasklet& tasklet) -> bool
                             {
                                 if(task_queue_back.enqueue(std::move(tasklet)) == false)
                                 {

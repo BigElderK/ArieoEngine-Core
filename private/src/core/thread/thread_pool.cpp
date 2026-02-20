@@ -71,7 +71,7 @@ namespace Arieo::Core
             m_stoped = true;
         }
 
-        for(std::thread& worker : m_workers)
+        for (size_t i = 0; i < m_workers.size(); ++i)
         {
             m_cv_for_worker.notify_one();
         }

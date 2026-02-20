@@ -92,7 +92,7 @@ namespace Arieo::Core
             auto iter = m_registered_interfaces.find(type_hash);
             if(iter == m_registered_interfaces.end())
             {
-                m_registered_interfaces.emplace(type_hash, std::move(std::unordered_map<std::string, void*>()));
+                m_registered_interfaces.emplace(type_hash, std::unordered_map<std::string, void*>());
                 iter = m_registered_interfaces.find(type_hash);
             }
             

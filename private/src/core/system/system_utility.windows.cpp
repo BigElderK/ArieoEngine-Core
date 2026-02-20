@@ -77,7 +77,7 @@ namespace Arieo::Core
     std::filesystem::path SystemUtility::FileSystem::getExePath()
     {
         char file_path_str[MAX_PATH];
-        MEMORY_BASIC_INFORMATION mbi;  
+        // MEMORY_BASIC_INFORMATION mbi;  
         ::GetModuleFileNameA(
                 nullptr, 
                 file_path_str,

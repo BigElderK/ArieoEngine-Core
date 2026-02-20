@@ -1,8 +1,16 @@
 cmake_minimum_required (VERSION 3.31)
 
-include($env{ARIEO_BUILD_ENV_PACKAGES_OUTPUT_DIR}/cmake/build_environment.cmake)
+include($ENV{ARIEO_BUILD_ENV_PACKAGES_OUTPUT_DIR}/cmake/build_environment.cmake)
 
-project(ArieoEngine)
+
+set(ARIEO_PACKAGE_CATEGORY "02_engine" CACHE INTERNAL "Category for Arieo packages")
+set(ARIEO_PACKAGE_NAME "Arieo-Core" CACHE INTERNAL "Name for Arieo package")
+add_custom_target(
+    Arieo-Core
+    DEPENDS 
+        arieo_core
+)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     arieo_engine_project(
         arieo_core
