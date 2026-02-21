@@ -5,8 +5,6 @@ include($ENV{ARIEO_BUILD_ENV_PACKAGES_OUTPUT_DIR}/cmake/build_environment.cmake)
 ARIEO_PACKAGE(
     Arieo-Core
     CATEGORY 02_engine
-    COMPONENTS
-        arieo_core
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
