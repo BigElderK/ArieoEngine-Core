@@ -2,12 +2,10 @@ cmake_minimum_required (VERSION 3.31)
 
 include($ENV{ARIEO_BUILD_ENV_PACKAGES_OUTPUT_DIR}/cmake/build_environment.cmake)
 
-
-set(ARIEO_PACKAGE_CATEGORY "02_engine" CACHE INTERNAL "Category for Arieo packages")
-set(ARIEO_PACKAGE_NAME "Arieo-Core" CACHE INTERNAL "Name for Arieo package")
-add_custom_target(
+ArieoPackage(
     Arieo-Core
-    DEPENDS 
+    CATEGORY 02_engine
+    COMPONENTS
         arieo_core
 )
 
