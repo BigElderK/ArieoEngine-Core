@@ -167,6 +167,7 @@ namespace Arieo::Core
         for (auto module_iter = modules_node.begin(); module_iter != modules_node.end(); ++module_iter)
         {
             std::string module_path = module_iter->as<std::string>();
+            Logger::info("Found engine module in manifest: {}", module_path);
             result.emplace_back(Core::SystemUtility::FileSystem::getFormalizedPath(module_path));
         }
 
