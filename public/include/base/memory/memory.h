@@ -5,6 +5,7 @@
 #include <memory_resource>
 #include <cstddef>
 #include <cstdlib>
+#include <type_traits>
 namespace Arieo::Base::Memory
 {
     class IAllocator
@@ -53,7 +54,8 @@ namespace Arieo::Base
     template <typename T>
     inline void deleteT(T* instance) 
     {
-        instance->~T();
+        using InstanceT = std::remove_cv_t<T>;
+        instance->InstanceT::~InstanceT();
         Arieo::Base::Memory::free(instance);
     }
 }

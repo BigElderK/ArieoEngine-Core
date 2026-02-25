@@ -3,6 +3,7 @@
 #include "core/logger/logger.h"
 #include "core/singleton/singleton.h"
 #include "core/module/module_context.h"
+#include "base/interface/interface.h"
 
 #include <filesystem>
 #include <variant>
@@ -38,13 +39,13 @@ namespace Arieo::Core
         }
 
         template<class T>
-        static T* getInterface(const std::string& instance_name = "")
+        static Base::Interface<T> getInterface(const std::string& instance_name = "")
         {
             const std::type_info& type_info_of_t = typeid(T);
             std::size_t type_hash = Base::ct::genCrc32StringID(type_info_of_t.name());
 
-            return reinterpret_cast<T*>(
-                getProcessSingleton().getInterface(type_hash, instance_name)
+            return Base::Interface<T>(
+                reinterpret_cast<T*>(getProcessSingleton().getInterface(type_hash, instance_name))
             );
         }
 
