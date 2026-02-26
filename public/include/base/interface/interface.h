@@ -7,6 +7,11 @@
 
 #define METADATA(x) [[clang::annotate(#x)]]
 
+namespace Arieo::Core
+{
+    class ModuleManager;
+}
+
 namespace Arieo::Base
 {
     // template <typename TInstance, typename TInterface>
@@ -14,20 +19,68 @@ namespace Arieo::Base
     // {
     //     return static_cast<TInstance*>(interface);
     // }
-
     template<typename TInterface>
-    class Interface
+    class Interface;
+
+    template<typename TInstance>
+    class Instance;
+
+    template<typename TInstance>
+    class Instance
     {
     protected:
+        TInstance m_instance;
+        size_t m_type_hash;
+
+        template<typename>
+        friend class Interface;
+    public:
+        template<typename... Args>
+        Instance(Args&&... args) : m_instance(std::forward<Args>(args)...) 
+        {
+            const size_t type_hash = std::hash<std::string_view>{}(typeid(TInstance).name());
+            m_type_hash = type_hash;
+        }
+
+        TInstance* operator->() { return &m_instance; }
+        const TInstance* operator->() const { return &m_instance; }
+
+        template<typename TInterface>
+        Base::Interface<TInterface> queryInterface() { return Base::Interface<TInterface>(this->operator->()); }
+        template<typename TInterface>
+        Base::Interface<TInterface> queryInterface() const { return Base::Interface<TInterface>(this->operator->()); }
+    };
+
+    template<typename TInterface>
+    class Interface    
+    {
+    private:
         TInterface* m_interface = nullptr;
+        Interface(TInterface* interface) : m_interface(interface) {}
+        friend class Arieo::Core::ModuleManager;
+
+        template<typename T>
+        friend class Instance;
     public:
         Interface() = default;
         Interface(std::nullptr_t) : m_interface(nullptr) {}
-        Interface(TInterface* interface) : m_interface(interface) {}
+        Interface(const Interface& other) noexcept : m_interface(other.m_interface) {}
+        Interface(Interface&& other) noexcept : m_interface(other.m_interface) {
+            other.m_interface = nullptr;
+        }
 
-        Interface& operator=(TInterface* interface)
-        {
-            m_interface = interface;
+        // Move assignment operator
+        Interface& operator=(Interface&& other) noexcept {
+            if (this != &other) {
+                m_interface = other.m_interface;
+                other.m_interface = nullptr;
+            }
+            return *this;
+        }
+
+        // Copy assignment operator
+        Interface& operator=(Interface& other) noexcept {
+            m_interface = other.m_interface;
             return *this;
         }
 
@@ -71,11 +124,11 @@ namespace Arieo::Base
         {
             const std::size_t hash = std::hash<std::string_view>{}(typeid(TInstance).name());
             std::size_t* type_hash_ptr = reinterpret_cast<std::size_t*>(reinterpret_cast<std::byte*>(static_cast<TInstance*>(m_interface)) + sizeof(TInstance));
-            // if(*type_hash_ptr != hash)            
-            // {
-            //     Core::Logger::fatal("Type hash mismatch when casting instance. Expected: {}, Actual: {}", hash, *type_hash_ptr);
-            //     return nullptr;
-            // }
+            if(*type_hash_ptr != hash)            
+            {
+                Core::Logger::fatal("Type hash mismatch when casting instance. Expected: {}, Actual: {}", hash, *type_hash_ptr);
+                return nullptr;
+            }
             return static_cast<TInstance*>(m_interface);
         }
 
@@ -85,13 +138,13 @@ namespace Arieo::Base
             const std::size_t hash = std::hash<std::string_view>{}(typeid(TInstance).name());
             std::size_t* type_hash_ptr = reinterpret_cast<std::size_t*>(reinterpret_cast<std::byte*>(m_interface) + sizeof(TInstance));
             
-            // if(*type_hash_ptr != hash)
-            // {
-            //     Core::Logger::fatal("Type hash mismatch when destroying instance. Expected: {}, Actual: {}", hash, *type_hash_ptr);
-            //     return;
-            // }
+            if(*type_hash_ptr != hash)
+            {
+                Core::Logger::fatal("Type hash mismatch when destroying instance. Expected: {}, Actual: {}", hash, *type_hash_ptr);
+                return;
+            }
 
-            reinterpret_cast<TInstance*>(m_interface)->~TInstance();
+            reinterpret_cast<TInstance*>(m_interface)->TInstance::~TInstance();
             Arieo::Base::Memory::free(m_interface);
             m_interface = nullptr;
         }
@@ -101,6 +154,20 @@ namespace Arieo::Base
     class InterfaceInfo
     {
     };
+}
 
-
+// Hash and equality for Interface so it can be used in unordered_set/map
+namespace std {
+    template <typename TInterface>
+    struct hash<Arieo::Base::Interface<TInterface>> {
+        std::size_t operator()(const Arieo::Base::Interface<TInterface>& iface) const noexcept {
+            return reinterpret_cast<std::size_t>(iface.operator->());
+        }
+    };
+    template <typename TInterface>
+    struct equal_to<Arieo::Base::Interface<TInterface>> {
+        bool operator()(const Arieo::Base::Interface<TInterface>& lhs, const Arieo::Base::Interface<TInterface>& rhs) const noexcept {
+            return lhs.operator->() == rhs.operator->();
+        }
+    };
 }
