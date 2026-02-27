@@ -1,4 +1,5 @@
 #pragma once
+#include "base/compile/ct_check.h"
 #include "base/memory/memory.h"
 #include "base/build_settings/build_settings.h"
 #include "base/string/string_utility.h"
@@ -7,6 +8,7 @@
 #include "base/compile/ct_string_id_gen.h"
 #include "base/concurrent/concurrent.h"
 #include "base/time/time.h"
+#include "base/interface/instance.h"
 #include "base/interface/interface.h"
 #include "base/string_id/string_id.h"
 

@@ -64,3 +64,9 @@
     #define ARIEO_CLANG_PRAGMA
     #define ARIEO_MSVC_PRAGMA
 #endif
+
+#ifdef _MSC_VER
+#define NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#else
+#define NO_UNIQUE_ADDRESS [[no_unique_address]]
+#endif
