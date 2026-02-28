@@ -3,6 +3,7 @@
 #include "base/types/equivalence_type.h"
 #include "base/compile/ct_string_id_gen.h"
 #include "base/types/equivalence_type.h"
+#include "base/compile/ct_check.h"
 namespace Arieo::Base
 {
     /*
@@ -24,6 +25,7 @@ namespace Arieo::Base
     };*/
 
     ARIEO_DEFINE_EQUIVAL_TYPE(StringID, std::uint32_t);
+    static_assert(Base::ct::DLLBoundarySafeCheck<StringID>, "StringID must be DLL boundary safe");
 }
 
 

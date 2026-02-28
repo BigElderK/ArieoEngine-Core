@@ -24,16 +24,9 @@ namespace Arieo::Base
             m_value = value;
         }
 
-        constexpr EquivalType(const EquivalType& other) noexcept
-        {
-            m_value = other.m_value;
-        }
+        constexpr EquivalType(const EquivalType& other) noexcept = default;
 
-        EquivalType& operator=(const EquivalType& other) noexcept
-        {
-            m_value = other.m_value;
-            return *this;
-        }
+        EquivalType& operator=(const EquivalType& other) noexcept = default;
 
         inline EType& get(){return m_value;}
         inline const EType& get() const{return m_value;}
@@ -53,7 +46,16 @@ namespace Arieo::Base
 //#endif
     };
 
-    #define ARIEO_DEFINE_EQUIVAL_TYPE(TType, EType) struct TType##_1{}; using TType = EquivalType<TType##_1, EType>;
+    #define ARIEO_DEFINE_EQUIVAL_TYPE(TType, EType)         \
+        struct TType {                                       \
+            EType m_value = std::numeric_limits<EType>::max(); \
+            constexpr TType() noexcept = default;            \
+            constexpr TType(EType v) noexcept : m_value(v) {} \
+            EType& get() noexcept { return m_value; }        \
+            const EType& get() const noexcept { return m_value; } \
+            bool operator==(const TType&) const noexcept = default; \
+            auto operator<=>(const TType&) const noexcept = default; \
+        };
 } // namespace Arieo
 
 template<typename TType, typename EType>
