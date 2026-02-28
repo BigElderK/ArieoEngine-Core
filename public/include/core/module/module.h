@@ -3,8 +3,8 @@
 #include "core/logger/logger.h"
 #include "core/singleton/singleton.h"
 #include "core/module/module_context.h"
-#include "base/interface/interface.h"
-#include "base/interface/instance.h"
+#include "base/interop/interface.h"
+#include "base/interop/instance.h"
 
 #include <filesystem>
 #include <variant>

@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <type_traits>
 #include "base/compile/ct_check.h"
-#include "base/interface/instance.h"
+#include "base/interop/instance.h"
 #include "core/logger/logger.h"
 
 namespace Arieo::Core

@@ -8,8 +8,8 @@
 #include "base/compile/ct_string_id_gen.h"
 #include "base/concurrent/concurrent.h"
 #include "base/time/time.h"
-#include "base/interface/instance.h"
-#include "base/interface/interface.h"
+#include "base/interop/instance.h"
+#include "base/interop/interface.h"
 #include "base/string_id/string_id.h"
 
 #include "base/math/math.h"
