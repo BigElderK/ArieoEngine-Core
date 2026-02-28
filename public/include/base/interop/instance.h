@@ -6,37 +6,21 @@
 
 namespace Arieo::Base
 {
-    // Forward declaration of Interop (defined in interop.h)
+    // Forward declaration of InteropOld (defined in InteropOld.h)
     template<typename T>
-    class Interop;
-
-    // Define flags as an enum with power-of-2 values
-    enum class InstanceFlags : uint32_t {
-        None           = 0,
-        EnableRefCount = 1 << 0,
-        EnableLogging  = 1 << 1,
-        // future flags...
-    };
-    
-    // Enable bitwise operators
-    constexpr InstanceFlags operator|(InstanceFlags a, InstanceFlags b) {
-        return static_cast<InstanceFlags>(
-            static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-    }
-    constexpr bool hasFlag(InstanceFlags flags, InstanceFlags test) {
-        return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(test)) != 0;
-    }
+    class InteropOld;
 
     class RefControlBlock
     {
     protected:
         std::atomic<uint32_t> m_shared_ref_count{1}; 
         std::atomic<uint32_t> m_weak_ref_count{1}; // weak count starts at 1 (the strong ref group holds one weak ref)
-        void (*m_delete_callback)() = nullptr;
+        void* m_context = nullptr;
+        void (*m_delete_callback)(void*) = nullptr;
         void (*m_destroy_block_callback)(RefControlBlock*) = nullptr;
     public:
-        RefControlBlock(void (*delete_callback)(), void (*destroy_block)(RefControlBlock*) = nullptr) 
-            : m_delete_callback(delete_callback), m_destroy_block_callback(destroy_block) {}
+        RefControlBlock(void* context, void (*delete_callback)(void*), void (*destroy_block)(RefControlBlock*)) 
+            : m_context(context), m_delete_callback(delete_callback), m_destroy_block_callback(destroy_block) {}
 
         // --- Strong refs ---
         uint32_t addRef() 
@@ -48,7 +32,7 @@ namespace Arieo::Base
             uint32_t prev = m_shared_ref_count.fetch_sub(1, std::memory_order_acq_rel);
             if(prev == 1) 
             {
-                if (m_delete_callback) m_delete_callback();
+                if (m_delete_callback) m_delete_callback(m_context);
                 releaseWeak(); // release the weak ref held by the strong ref group
             }
             return prev - 1; 
@@ -93,22 +77,17 @@ namespace Arieo::Base
                 "RefControlBlock* must be safe to pass across DLL boundary");
 
     // Single Instance template, conditionally adds members via flags
-    template<typename TInstance, InstanceFlags Flags = InstanceFlags::None>
+    template<typename TInstance>
     class Instance
     {
     protected:
         TInstance m_instance;
-        InstanceFlags m_flags = Flags;
         uint32_t m_type_hash = 0;
         
         struct Empty {};
-        
-        NO_UNIQUE_ADDRESS
-        std::conditional_t<hasFlag(Flags, InstanceFlags::EnableRefCount),
-                        RefControlBlock, Empty> m_ref;
 
         template<typename> friend class Interface;
-        template<typename> friend class Interop;
+        template<typename> friend class InteropOld;
 
     public:
         template<typename... Args>
@@ -118,21 +97,13 @@ namespace Arieo::Base
             m_type_hash = static_cast<uint32_t>(std::hash<std::string_view>{}(typeid(TInstance).name()));
         }
 
-        template<typename... Args>
-        Instance(void (*delete_callback_fun)(), Args&&... args) requires (hasFlag(Flags, InstanceFlags::EnableRefCount))
-            : m_instance(std::forward<Args>(args)...), 
-              m_ref(delete_callback_fun)
-        {
-            m_type_hash = static_cast<uint32_t>(std::hash<std::string_view>{}(typeid(TInstance).name()));
-        }
-
         TInstance* operator->() { return &m_instance; }
         const TInstance* operator->() const { return &m_instance; }
 
         template<typename TInterface>
-        Base::Interop<TInterface> queryInterface()
+        Base::InteropOld<TInterface> queryInterface()
         {
-            return Base::Interop<TInterface>(static_cast<TInterface*>(&m_instance));
+            return Base::InteropOld<TInterface>(static_cast<TInterface*>(&m_instance));
         }
     };
 }

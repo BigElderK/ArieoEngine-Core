@@ -10,7 +10,7 @@ namespace Arieo::Core
     class ModuleManager;
 }
 
-namespace Arieo::Base::InteropEx
+namespace Arieo::Base::Interop
 {
     template<typename T>
     class SharedRef
@@ -162,6 +162,19 @@ namespace Arieo::Base::InteropEx
 
         template<typename U>
         friend class WeakRef;
+
+        template <typename TInstance>
+        TInstance* castToInstance()
+        {
+            const uint32_t hash = static_cast<uint32_t>(std::hash<std::string_view>{}(typeid(TInstance).name()));
+            uint32_t* type_hash_ptr = reinterpret_cast<uint32_t*>(reinterpret_cast<std::byte*>(static_cast<TInstance*>(m_ptr)) + sizeof(TInstance));
+            if(*type_hash_ptr != hash)            
+            {
+                Core::Logger::fatal("Type hash mismatch when casting instance. Expected: {}, Actual: {}", hash, *type_hash_ptr);
+                return nullptr;
+            }
+            return static_cast<TInstance*>(m_ptr);
+        }
     };
     static_assert(Base::ct::DLLBoundaryLayoutSafe<SharedRef<void>>, "SharedRef<T> must be DLL boundary safe");
 
@@ -486,13 +499,31 @@ namespace Arieo::Base::InteropEx
         friend class RawRef;
     };
     static_assert(Base::ct::DLLBoundaryLayoutSafe<RawRef<void>>, "RawRef<T> must be DLL boundary safe");
+
+    template<typename TInterface, typename TInstance, typename... Args>
+    static SharedRef<TInterface> createInstance(Args&&... args)
+    {
+        // Allocate memory for T + type hash
+        Instance<TInstance>* new_instance = new (Base::Memory::malloc(sizeof(Instance<TInstance>))) Instance<TInstance>(std::forward<Args>(args)...);
+        RefControlBlock* ref_block = new (Base::Memory::malloc(sizeof(RefControlBlock))) RefControlBlock(
+            new_instance,
+            [](void* context) -> void{
+                auto* instance = static_cast<Instance<TInstance>*>(context);
+                instance->~Instance<TInstance>();
+                Base::Memory::free(instance);
+            },
+            [](RefControlBlock* this_block) -> void{
+                this_block->~RefControlBlock();
+                Base::Memory::free(this_block);
+            }
+        );
+
+        return SharedRef<TInterface>(static_cast<TInterface*>(new_instance->operator->()), ref_block);
+    }
 }
 
 namespace Arieo::Base
 {
-    // Forward declaration (defined in instance.h)
-    enum class InstanceFlags : unsigned;
-
     class IReferenceCounted
     {
     public:        
@@ -519,26 +550,26 @@ namespace Arieo::Base
 namespace Arieo::Base
 {
     template<typename T>
-    class Interop;
+    class InteropOld;
 
     template<>
-    class Interop<std::string_view>
+    class InteropOld<std::string_view>
     {
     private:
         void* buf = nullptr;
         size_t size = 0;
     public:
-        Interop() = delete;
-        Interop(const Interop&) noexcept = delete;
-        Interop(Interop&&) noexcept = delete;
-        Interop& operator=(const Interop&) noexcept = delete;
-        Interop& operator=(Interop&&) noexcept = delete;
-        ~Interop() = default;
+        InteropOld() = delete;
+        InteropOld(const InteropOld&) noexcept = delete;
+        InteropOld(InteropOld&&) noexcept = delete;
+        InteropOld& operator=(const InteropOld&) noexcept = delete;
+        InteropOld& operator=(InteropOld&&) noexcept = delete;
+        ~InteropOld() = default;
 
-        Interop(const std::string_view& str)
+        InteropOld(const std::string_view& str)
             : buf((void*)str.data()), size(str.size()) {}
 
-        Interop(const char str[])
+        InteropOld(const char str[])
             : buf((void*)str), size(std::strlen(str)) {}
 
         std::string getString() const
@@ -546,31 +577,31 @@ namespace Arieo::Base
             return std::string((char*)buf, size);
         }
     };
-    static_assert(Base::ct::DLLBoundarySafeCheck<Interop<std::string_view>>, "Interop<std::string_view> must be DLL boundary safe");
+    static_assert(Base::ct::DLLBoundarySafeCheck<InteropOld<std::string_view>>, "InteropOld<std::string_view> must be DLL boundary safe");
 
     template<>
-    class Interop<IBufferView>
+    class InteropOld<IBufferView>
     {
     private:
         void* m_buf = nullptr;
         size_t m_size = 0;
     public:
-        Interop() = delete;
-        Interop(const Interop&) noexcept = delete;
-        Interop(Interop&&) noexcept = delete;
-        Interop& operator=(const Interop&) noexcept = delete;
-        Interop& operator=(Interop&&) noexcept = delete;
-        ~Interop() = default;
+        InteropOld() = delete;
+        InteropOld(const InteropOld&) noexcept = delete;
+        InteropOld(InteropOld&&) noexcept = delete;
+        InteropOld& operator=(const InteropOld&) noexcept = delete;
+        InteropOld& operator=(InteropOld&&) noexcept = delete;
+        ~InteropOld() = default;
 
-        Interop(void* data, size_t len) : m_buf(data), m_size(len) {}
+        InteropOld(void* data, size_t len) : m_buf(data), m_size(len) {}
 
         void* getBuffer() const { return m_buf; }
         size_t getSize() const { return m_size; }
     };
-    static_assert(Base::ct::DLLBoundarySafeCheck<Interop<IBufferView>>, "Interop<IBufferView> must be DLL boundary safe");
+    static_assert(Base::ct::DLLBoundarySafeCheck<InteropOld<IBufferView>>, "InteropOld<IBufferView> must be DLL boundary safe");
 
     template<>
-    class Interop<IBuffer>
+    class InteropOld<IBuffer>
     {
     private:
         void* m_buf = nullptr;
@@ -578,14 +609,14 @@ namespace Arieo::Base
         void (*m_release_func)(void*, size_t) = nullptr;
 
     public:
-        Interop() = delete;
-        Interop(const Interop&) noexcept = default;
-        Interop(Interop&&) noexcept = default;
-        Interop& operator=(const Interop&) noexcept = default;
-        Interop& operator=(Interop&&) noexcept = default;
-        ~Interop() = default;
+        InteropOld() = delete;
+        InteropOld(const InteropOld&) noexcept = default;
+        InteropOld(InteropOld&&) noexcept = default;
+        InteropOld& operator=(const InteropOld&) noexcept = default;
+        InteropOld& operator=(InteropOld&&) noexcept = default;
+        ~InteropOld() = default;
 
-        Interop(void* data, size_t len, void (*release_func)(void*, size_t)) 
+        InteropOld(void* data, size_t len, void (*release_func)(void*, size_t)) 
             : m_buf(data), m_size(len), m_release_func(release_func) {}
 
         void* getBuffer() const { return m_buf; }
@@ -601,30 +632,30 @@ namespace Arieo::Base
             }
         }
     };
-    static_assert(Base::ct::DLLBoundarySafeCheck<Interop<IBufferView>>, "Interop<IBufferView> must be DLL boundary safe");
+    static_assert(Base::ct::DLLBoundarySafeCheck<InteropOld<IBufferView>>, "InteropOld<IBufferView> must be DLL boundary safe");
 
     template<class TInterface>
-    class Interop    
+    class InteropOld    
     {
     private:
     
     private:
         TInterface* m_interface = nullptr;
-        Interop(TInterface* interface) : m_interface(interface) {}
+        InteropOld(TInterface* interface) : m_interface(interface) {}
         friend class Arieo::Core::ModuleManager;
 
-        template<typename T, InstanceFlags>
+        template<typename T>
         friend class Instance;
     public:
-        Interop() = default;
-        Interop(std::nullptr_t) : m_interface(nullptr) {}
-        Interop(const Interop&) noexcept = default;
-        Interop(Interop&&) noexcept = default;
-        Interop& operator=(const Interop&) noexcept = default;
-        Interop& operator=(Interop&&) noexcept = default;
-        ~Interop() = default;
+        InteropOld() = default;
+        InteropOld(std::nullptr_t) : m_interface(nullptr) {}
+        InteropOld(const InteropOld&) noexcept = default;
+        InteropOld(InteropOld&&) noexcept = default;
+        InteropOld& operator=(const InteropOld&) noexcept = default;
+        InteropOld& operator=(InteropOld&&) noexcept = default;
+        ~InteropOld() = default;
 
-        Interop& operator=(std::nullptr_t)
+        InteropOld& operator=(std::nullptr_t)
         {
             m_interface = nullptr;
             return *this;
@@ -644,21 +675,21 @@ namespace Arieo::Base
         bool operator==(std::nullptr_t) const { return m_interface == nullptr; }
         bool operator!=(std::nullptr_t) const { return m_interface != nullptr; }
 
-        bool operator==(Interop<TInterface> const& other) const { return m_interface == other.m_interface; }
-        bool operator!=(Interop<TInterface> const& other) const { return m_interface != other.m_interface; }
+        bool operator==(InteropOld<TInterface> const& other) const { return m_interface == other.m_interface; }
+        bool operator!=(InteropOld<TInterface> const& other) const { return m_interface != other.m_interface; }
 
-        template<typename TInstance, InstanceFlags Flags = InstanceFlags::None, typename... Args>
-        static Interop<TInterface> createAs(Args&&... args)
+        template<typename TInstance, typename... Args>
+        static InteropOld<TInterface> createAs(Args&&... args)
         {
-            Instance<TInstance>* new_instance = new (Base::Memory::malloc(sizeof(Instance<TInstance>))) Instance<TInstance, Flags>(std::forward<Args>(args)...);
+            Instance<TInstance>* new_instance = new (Base::Memory::malloc(sizeof(Instance<TInstance>))) Instance<TInstance>(std::forward<Args>(args)...);
             return new_instance->template queryInterface<TInterface>();
         }
 
         template<typename TInstance>
-        static void destroyAs(Interop<TInterface>&& interop)
+        static void destroyAs(InteropOld<TInterface>&& InteropOld)
         {
             const uint32_t hash = static_cast<uint32_t>(std::hash<std::string_view>{}(typeid(TInstance).name()));
-            Instance<TInstance>* instance = reinterpret_cast<Instance<TInstance>*>(interop.m_interface);
+            Instance<TInstance>* instance = reinterpret_cast<Instance<TInstance>*>(InteropOld.m_interface);
             
             if(instance->m_type_hash != hash)
             {
@@ -667,39 +698,54 @@ namespace Arieo::Base
             }
 
             instance->~Instance<TInstance>();
-            Arieo::Base::Memory::free(interop.m_interface);
+            Arieo::Base::Memory::free(InteropOld.m_interface);
 
-            interop.m_interface = nullptr;
+            InteropOld.m_interface = nullptr;
         }
 
         template <typename TInstance>
         TInstance* castTo()
         {
             const uint32_t hash = static_cast<uint32_t>(std::hash<std::string_view>{}(typeid(TInstance).name()));
-            uint32_t* type_hash_ptr = reinterpret_cast<uint32_t*>(reinterpret_cast<std::byte*>(static_cast<TInstance*>(m_interface)) + sizeof(TInstance) + sizeof(uint32_t));
-            if(*type_hash_ptr != hash)            
+            Instance<TInstance>* instance = reinterpret_cast<Instance<TInstance>*>(m_interface);
+
+            if(instance->m_type_hash != hash)         
             {
-                Core::Logger::fatal("Type hash mismatch when casting instance. Expected: {}, Actual: {}", hash, *type_hash_ptr);
+                Core::Logger::fatal("Type hash mismatch when casting instance. Expected: {}, Actual: {}", hash, instance->m_type_hash);
                 return nullptr;
             }
             return static_cast<TInstance*>(m_interface);
         }
     };
-    static_assert(Base::ct::DLLBoundarySafeCheck<Interop<void>>, "Interop<T> must be DLL boundary safe");
+    static_assert(Base::ct::DLLBoundarySafeCheck<InteropOld<void>>, "InteropOld<T> must be DLL boundary safe");
 }
 
 // Hash and equality for Interface so it can be used in unordered_set/map
 namespace std {
     template <typename TInterface>
-    struct hash<Arieo::Base::Interop<TInterface>> {
-        std::size_t operator()(const Arieo::Base::Interop<TInterface>& iface) const noexcept {
+    struct hash<Arieo::Base::InteropOld<TInterface>> {
+        std::size_t operator()(const Arieo::Base::InteropOld<TInterface>& iface) const noexcept {
             return reinterpret_cast<std::size_t>(iface.operator->());
         }
     };
     template <typename TInterface>
-    struct equal_to<Arieo::Base::Interop<TInterface>> {
-        bool operator()(const Arieo::Base::Interop<TInterface>& lhs, const Arieo::Base::Interop<TInterface>& rhs) const noexcept {
+    struct equal_to<Arieo::Base::InteropOld<TInterface>> {
+        bool operator()(const Arieo::Base::InteropOld<TInterface>& lhs, const Arieo::Base::InteropOld<TInterface>& rhs) const noexcept {
             return lhs.operator->() == rhs.operator->();
+        }
+    };
+
+    // Hash and equality for SharedRef so it can be used in unordered_set/map
+    template <typename T>
+    struct hash<Arieo::Base::Interop::SharedRef<T>> {
+        std::size_t operator()(const Arieo::Base::Interop::SharedRef<T>& ref) const noexcept {
+            return reinterpret_cast<std::size_t>(ref.get());
+        }
+    };
+    template <typename T>
+    struct equal_to<Arieo::Base::Interop::SharedRef<T>> {
+        bool operator()(const Arieo::Base::Interop::SharedRef<T>& lhs, const Arieo::Base::Interop::SharedRef<T>& rhs) const noexcept {
+            return lhs.get() == rhs.get();
         }
     };
 }
