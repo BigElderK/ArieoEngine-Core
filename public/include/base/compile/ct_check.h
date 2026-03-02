@@ -42,6 +42,10 @@ namespace Arieo::Base
         template<typename R, typename C, typename... Args>
         struct DLLSafeMemberFunctionCheck<R(C::*)(Args...) const>
             : std::bool_constant<DLLBoundarySafeParam<R> && (DLLBoundarySafeParam<Args> && ...)> {};
+
+        template<typename T>
+        constexpr bool PLAIN_DATA_CHECK =
+            std::is_trivial_v<T> && std::is_standard_layout_v<T>;
     }
 }
 

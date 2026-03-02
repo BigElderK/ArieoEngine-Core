@@ -1,5 +1,6 @@
 #pragma once
 #include <coroutine>
+#include "base/interop/interop.h"
 namespace Arieo::Core::Coroutine
 {
     class Task;

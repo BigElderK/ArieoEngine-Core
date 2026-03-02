@@ -13,7 +13,7 @@ namespace Arieo::Core::Coroutine
     {
         for(auto tasklet_iter = m_tasklet_list.begin(); tasklet_iter != m_tasklet_list.end();) 
         {
-            if(tasklet_iter->m_task_fun(*this) == true)
+            if(tasklet_iter->m_task_fun->execute(*this) == true)
             {
                 tasklet_iter = m_tasklet_list.erase(tasklet_iter);
             }

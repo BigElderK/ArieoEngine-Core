@@ -191,6 +191,29 @@ namespace Arieo::Base::Interop
         {
             return SharedRef<U>(static_cast<U*>(m_ptr), m_ref_control_block);
         }
+
+        template<typename TInstance, typename... Args>
+        static SharedRef<T> createInstance(Args&&... args)
+        {
+            // Allocate memory for T + type hash
+            const uint32_t instance_type_hash = static_cast<uint32_t>(std::hash<std::string_view>{}(typeid(TInstance).name()));
+            TInstance* new_instance = new (Base::Memory::malloc(sizeof(TInstance))) TInstance(std::forward<Args>(args)...);
+            RefControlBlock* ref_block = new (Base::Memory::malloc(sizeof(RefControlBlock))) RefControlBlock(
+                new_instance,
+                instance_type_hash,
+                [](void* instance_ptr) -> void{
+                    auto* instance = static_cast<TInstance*>(instance_ptr);
+                    instance->~TInstance();
+                    Base::Memory::free(instance);
+                },
+                [](RefControlBlock* this_block) -> void{
+                    this_block->~RefControlBlock();
+                    Base::Memory::free(this_block);
+                }
+            );
+
+            return SharedRef<T>(new_instance, ref_block);
+        }
     };
     static_assert(Base::ct::DLLBoundaryLayoutSafe<SharedRef<void>>, "SharedRef<T> must be DLL boundary safe");
 
@@ -451,14 +474,6 @@ namespace Arieo::Base::Interop
             swap(tmp);
         }
 
-        T* release() noexcept
-        {
-            T* ptr = m_ptr;
-            m_ptr = nullptr;
-            m_ref_control_block = nullptr;
-            return ptr;
-        }
-
         void swap(UniqueRef& other) noexcept
         {
             std::swap(m_ptr, other.m_ptr);
@@ -480,8 +495,28 @@ namespace Arieo::Base::Interop
         bool operator==(std::nullptr_t) const noexcept { return m_ptr == nullptr; }
         bool operator!=(std::nullptr_t) const noexcept { return m_ptr != nullptr; }
 
-        template<typename U>
-        friend class UniqueRef;
+        template<typename TInstance, typename... Args>
+        static UniqueRef<T> createInstance(Args&&... args)
+        {
+            // Allocate memory for T + type hash
+            const uint32_t instance_type_hash = static_cast<uint32_t>(std::hash<std::string_view>{}(typeid(TInstance).name()));
+            TInstance* new_instance = new (Base::Memory::malloc(sizeof(TInstance))) TInstance(std::forward<Args>(args)...);
+            RefControlBlock* ref_block = new (Base::Memory::malloc(sizeof(RefControlBlock))) RefControlBlock(
+                new_instance,
+                instance_type_hash,
+                [](void* instance_ptr) -> void{
+                    auto* instance = static_cast<TInstance*>(instance_ptr);
+                    instance->~TInstance();
+                    Base::Memory::free(instance);
+                },
+                [](RefControlBlock* this_block) -> void{
+                    this_block->~RefControlBlock();
+                    Base::Memory::free(this_block);
+                }
+            );
+
+            return UniqueRef<T>(new_instance, ref_block);
+        }
     };
     static_assert(Base::ct::DLLBoundaryLayoutSafe<UniqueRef<void>>, "UniqueRef<T> must be DLL boundary safe");
 
@@ -587,29 +622,6 @@ namespace Arieo::Base::Interop
     };
     static_assert(Base::ct::DLLBoundaryLayoutSafe<RawRef<void>>, "RawRef<T> must be DLL boundary safe");
 
-    template<typename TInterface, typename TInstance, typename... Args>
-    static SharedRef<TInterface> createInstance(Args&&... args)
-    {
-        // Allocate memory for T + type hash
-        const uint32_t instance_type_hash = static_cast<uint32_t>(std::hash<std::string_view>{}(typeid(TInstance).name()));
-        TInstance* new_instance = new (Base::Memory::malloc(sizeof(TInstance))) TInstance(std::forward<Args>(args)...);
-        RefControlBlock* ref_block = new (Base::Memory::malloc(sizeof(RefControlBlock))) RefControlBlock(
-            new_instance,
-            instance_type_hash,
-            [](void* instance_ptr) -> void{
-                auto* instance = static_cast<TInstance*>(instance_ptr);
-                instance->~TInstance();
-                Base::Memory::free(instance);
-            },
-            [](RefControlBlock* this_block) -> void{
-                this_block->~RefControlBlock();
-                Base::Memory::free(this_block);
-            }
-        );
-
-        return SharedRef<TInterface>(new_instance, ref_block);
-    }
-
     template<typename TInterface, typename TInstance>
     static SharedRef<TInterface> makePersistentShared(TInstance& instance)
     {
@@ -705,5 +717,40 @@ namespace Arieo::Base::Interop
         }
     };
     static_assert(Base::ct::DLLBoundarySafeCheck<StringView>, "StringView must be DLL boundary safe");
-}
 
+    template<typename T>
+    class DataArrayView final
+    {
+    private:
+        static_assert(std::is_void_v<T> || ct::PLAIN_DATA_CHECK<T> || ct::DLLBoundarySafeCheck<T>, "DataArray requires plain data or DLL-safe types");
+    private:
+        const T* m_data;
+        size_t m_size;
+    public:
+        DataArrayView() = delete;
+        DataArrayView(const DataArrayView&) = delete;
+        DataArrayView& operator=(const DataArrayView&) = delete;
+
+        DataArrayView(const T* array, size_t size)
+            : m_data(array), m_size(size)
+        {
+        }
+
+        DataArrayView(std::initializer_list<T> list) noexcept
+            : m_data(list.begin()), m_size(list.size())
+        {
+        }
+
+        template<typename TContainer>
+            requires requires(TContainer c, size_t i) { c.data(); c.size(); }
+        DataArrayView(TContainer& container)
+            : m_data(container.data()), m_size(container.size())
+        {
+        }
+
+        size_t getItemCount() const { return m_size; }
+        const T getItem(size_t index) const { return m_data[index]; }
+        const T operator [] (size_t index) const { return m_data[index]; }
+    };
+    static_assert(Base::ct::DLLBoundaryLayoutSafe<DataArrayView<int>>, "DataArrayView<int> must be DLL boundary safe");
+}
