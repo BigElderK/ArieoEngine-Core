@@ -11,9 +11,9 @@
 
 namespace Arieo::Core
 {
-    typedef void (*MODULE_ENTRY_FUN_PTR)(IProcessSingletonRegister*, Base::Memory::MemoryManager* defualt_memory_manager);
+    typedef void (*MODULE_ENTRY_FUN_PTR)(IProcessSingletonRegister*, Base::Memory::MemoryManager* default_memory_manager);
     typedef void (*MODULE_MAIN_FUN_PTR)();
-    void ModuleManager::loadModuleLib(const Base::Interop::StringView& module_path, Base::Memory::MemoryManager* defualt_memory_manager)
+    void ModuleManager::loadModuleLib(const Base::Interop::StringView& module_path, Base::Memory::MemoryManager* default_memory_manager)
     {
         const std::string path_str = module_path.getString();
         SystemUtility::Lib::LIBTYPE module_lib = SystemUtility::Lib::loadLibrary(path_str.c_str());
@@ -28,7 +28,7 @@ namespace Arieo::Core
         {
             Logger::fatal("Cannot found ModuleEntry for {}", path_str);
         }
-        module_entry_fun(ProcessSingletonRegister::getProcessSingleton(), defualt_memory_manager);
+        module_entry_fun(ProcessSingletonRegister::getProcessSingleton(), default_memory_manager);
 
         MODULE_MAIN_FUN_PTR module_main_fun = (MODULE_MAIN_FUN_PTR)SystemUtility::Lib::getProcAddress(module_lib, "ModuleMain");
         if(module_main_fun == nullptr)

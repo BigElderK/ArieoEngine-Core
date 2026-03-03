@@ -9,6 +9,8 @@ namespace Arieo::Core::Coroutine
         return m_tasklet_list.empty();
     }
 
+    Task::~Task() = default;
+
     void Task::updateOneStep()
     {
         for(auto tasklet_iter = m_tasklet_list.begin(); tasklet_iter != m_tasklet_list.end();) 

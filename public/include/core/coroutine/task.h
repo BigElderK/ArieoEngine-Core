@@ -4,6 +4,7 @@
 namespace Arieo::Core
 {
     class JobSystem;
+    class JobWorker;
 }
 
 namespace Arieo::Core::Coroutine
@@ -38,18 +39,16 @@ namespace Arieo::Core::Coroutine
         };
     private:
         friend class Core::JobSystem;
-    public:
+        friend class Core::JobWorker;
         std::list<Tasklet> m_tasklet_list;
+        Base::Interop::SharedRef<IPreprocessTaskletDelegate> m_preprocess_append_tasklet_delegate;
     public:
         Task()
         {
 
         }
 
-        ~Task()
-        {
-
-        }
+        ~Task();
 
         template<typename T>
         Task(Core::Coroutine::CorHandle<T>&& startup_cor)
@@ -117,8 +116,7 @@ namespace Arieo::Core::Coroutine
 
         void appendTasklet(Tasklet&& tasklet); // body in task.cpp — keeps emplace_back in Core's heap
 
-        Base::Interop::SharedRef<IPreprocessTaskletDelegate> m_preprocess_append_tasklet_delegate;
-
+    private:
         bool isFinished();
         void updateOneStep();
 

@@ -11,7 +11,7 @@ namespace Arieo::Core
             m_task_list.emplace_back(std::move(task));                        
         }
 
-        void updateTasks(Base::Interop::SharedRef<Coroutine::IPreprocessTaskletDelegate> preprocess_append_tasklet_fun)
+        void updateTasks(const Base::Interop::SharedRef<Coroutine::IPreprocessTaskletDelegate>& preprocess_append_tasklet_fun)
         {
             for(auto task_iter = m_task_list.begin(); task_iter != m_task_list.end();)
             {
