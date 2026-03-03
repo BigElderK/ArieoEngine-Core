@@ -95,7 +95,7 @@ namespace Arieo::Base
         DataList& operator=(const DataList&) = delete;
 
         template<typename TContainer, typename TGetter>
-            requires requires(TContainer c, TGetter g, size_t i) { c.size(); c[0]; g(c, i); }
+            requires requires(TContainer c, TGetter g, size_t i) { c.size(); c[i]; g(c, i); }
         DataList(TContainer&& container, TGetter&& get_item_delegate)
         {
             size_t count = container.size();
@@ -114,7 +114,14 @@ namespace Arieo::Base
         }
 
         size_t getItemCount() override { return m_get_count_delegate ? m_get_count_delegate() : 0; }
-        const T getItem(size_t index) override { return m_get_item_delegate ? m_get_item_delegate(index) : T{}; }
+        const T getItem(size_t index) override 
+        { 
+            if(index >= getItemCount())
+            {
+                Core::Logger::fatal("getItem called on DataList without a valid index: {} (item count: {})", index, getItemCount());
+            }
+            return (index < getItemCount() && m_get_item_delegate) ? m_get_item_delegate(index) : T{}; 
+        }
         ~DataList()
         {
             if (m_destroy_delegate) m_destroy_delegate();
