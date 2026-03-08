@@ -1,5 +1,6 @@
 #pragma once
 #include <coroutine>
+#include <functional>
 #include <type_traits>
 #include "core/coroutine/task.h"
 namespace Arieo::Core::Coroutine
@@ -34,7 +35,7 @@ namespace Arieo::Core::Coroutine
         YieldUpdate(std::function<bool(Task&)>&& update_func) noexcept
             : m_update_fun(std::move(update_func))
         {
-
+            
         }
     };
 
