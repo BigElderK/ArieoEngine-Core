@@ -11,10 +11,12 @@ namespace Arieo::Core
         std::unique_lock<std::mutex> lock(m_mutex_for_worker);
         for(size_t i_thread = 0; i_thread < num_threads; i_thread++)
         {
+            Core::Logger::trace("Creating worker thread {}", i_thread);
             m_workers.emplace_back(
                 [this, i_thread] 
                 {
                     tls_cur_thread_id = i_thread + 1;
+                    Core::Logger::trace("Worker thread {} started", i_thread);
                     while(true)
                     {
                         std::function<void()> new_task;
@@ -60,6 +62,7 @@ namespace Arieo::Core
                     }
                 }
             );
+            Core::Logger::trace("Worker thread {} created", i_thread);
         }
         m_stoped = false;
     }
